@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chapter &amp; Verse — Bookstore</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="logo"><span class="mark"></span>Chapter &amp; Verse</a>
+    <nav class="nav-right">
+      <span class="nav-user" id="nav-user"></span>
+      <a href="cart.html" class="cart-link nav-link">
+        Cart <span class="cart-count" id="cart-count">0</span>
+      </a>
+      <button class="logout-btn" id="logout-btn">Log out</button>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+    <div>
+      <h1>Small shop, well&nbsp;read shelves.</h1>
+      <p>New arrivals and old favourites, picked by hand each week. Add what catches your eye — your cart follows you across the shop.</p>
+    </div>
+    <div class="hero-shelf" id="hero-shelf" aria-hidden="true"></div>
+  </section>
+
+  <div class="toolbar">
+    <input type="search" id="search-input" placeholder="Search by title or author…" />
+    <div id="genre-chips"></div>
+  </div>
+
+  <h2 class="section-title">On the shelf</h2>
+  <div class="grid" id="book-grid"></div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">&copy; 2026 Chapter &amp; Verse. A learning project.</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/books.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script>
+  requireAuth();
+
+  document.getElementById("nav-user").textContent = "Hi, " + currentUser();
+  document.getElementById("logout-btn").addEventListener("click", logoutUser);
+
+  // Decorative shelf built from the first few titles — pure CSS, no images.
+  const shelf = document.getElementById("hero-shelf");
+  BOOKS.slice(0, 8).forEach((b) => {
+    const spine = document.createElement("div");
+    spine.className = "spine";
+    spine.style.background = b.color;
+    spine.style.height = 120 + (b.id % 5) * 20 + "px";
+    spine.dataset.label = b.title.split(" ")[0];
+    shelf.appendChild(spine);
+  });
+
+  // Genre filter chips
+  const genres = ["all", ...new Set(BOOKS.map((b) => b.genre))];
+  const chipWrap = document.getElementById("genre-chips");
+  let activeGenre = "all";
+  let searchTerm = "";
+
+  genres.forEach((g) => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (g === "all" ? " active" : "");
+    chip.textContent = g;
+    chip.dataset.genre = g;
+    chip.addEventListener("click", () => {
+      activeGenre = g;
+      [...chipWrap.children].forEach((c) => c.classList.toggle("active", c === chip));
+      renderGrid();
+    });
+    chipWrap.appendChild(chip);
+  });
+
+  document.getElementById("search-input").addEventListener("input", (e) => {
+    searchTerm = e.target.value.trim().toLowerCase();
+    renderGrid();
+  });
+
+  function renderGrid() {
+    const grid = document.getElementById("book-grid");
+    const filtered = BOOKS.filter((b) => {
+      const matchesGenre = activeGenre === "all" || b.genre === activeGenre;
+      const matchesSearch =
+        !searchTerm ||
+        b.title.toLowerCase().includes(searchTerm) ||
+        b.author.toLowerCase().includes(searchTerm);
+      return matchesGenre && matchesSearch;
+    });
+
+    grid.innerHTML = "";
+    if (filtered.length === 0) {
+      grid.innerHTML = '<p class="empty-note">No books match that search. Try another title or author.</p>';
+      return;
+    }
+
+    filtered.forEach((b) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="cover" style="background:${b.color}">${b.title}</div>
+        <div class="card-body">
+          <div class="card-title">${b.title}</div>
+          <div class="card-author">${b.author}</div>
+          <div class="card-genre">${b.genre}</div>
+          <div class="card-footer">
+            <span class="price">$${b.price.toFixed(2)}</span>
+            <button class="add-btn" data-id="${b.id}">Add to cart</button>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll(".add-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        addToCart(btn.dataset.id, 1);
+        showToast("Added to cart");
+        const original = btn.textContent;
+        btn.textContent = "Added ✓";
+        btn.disabled = true;
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.disabled = false;
+        }, 900);
+      });
+    });
+  }
+
+  updateCartCount();
+  renderGrid();
+</script>
+</body>
+</html>

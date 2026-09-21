@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sign in — Chapter &amp; Verse</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <a href="login.html" class="logo"><span class="mark"></span>Chapter &amp; Verse</a>
+    <p class="login-tag" id="login-tag">Sign in to browse the shelves</p>
+
+    <form id="auth-form">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required />
+      </div>
+      <p class="form-msg" id="form-msg"></p>
+      <button type="submit" class="submit-btn" id="submit-btn">Sign in</button>
+    </form>
+
+    <p class="toggle-mode">
+      <span id="toggle-text">New here?</span>
+      <button type="button" id="toggle-btn">Create an account</button>
+    </p>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+  let mode = "login"; // or "signup"
+
+  const form = document.getElementById("auth-form");
+  const msg = document.getElementById("form-msg");
+  const submitBtn = document.getElementById("submit-btn");
+  const toggleBtn = document.getElementById("toggle-btn");
+  const toggleText = document.getElementById("toggle-text");
+  const tag = document.getElementById("login-tag");
+
+  // If already logged in, skip straight to the catalog.
+  if (currentUser()) {
+    window.location.href = "index.html";
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    mode = mode === "login" ? "signup" : "login";
+    msg.textContent = "";
+    if (mode === "signup") {
+      submitBtn.textContent = "Create account";
+      toggleText.textContent = "Already have an account?";
+      toggleBtn.textContent = "Sign in instead";
+      tag.textContent = "Create an account to start browsing";
+    } else {
+      submitBtn.textContent = "Sign in";
+      toggleText.textContent = "New here?";
+      toggleBtn.textContent = "Create an account";
+      tag.textContent = "Sign in to browse the shelves";
+    }
+  });
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!username || !password) {
+      msg.textContent = "Please fill in both fields.";
+      return;
+    }
+
+    const result = mode === "signup"
+      ? registerUser(username, password)
+      : null;
+
+    if (mode === "signup") {
+      if (!result.ok) {
+        msg.textContent = result.message;
+        return;
+      }
+      // auto-login right after signup
+      loginUser(username, password);
+      window.location.href = "index.html";
+      return;
+    }
+
+    const loginResult = loginUser(username, password);
+    if (!loginResult.ok) {
+      msg.textContent = loginResult.message;
+      return;
+    }
+    window.location.href = "index.html";
+  });
+</script>
+</body>
+</html>
